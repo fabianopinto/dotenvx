@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,19 +37,19 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            suffix: ''
+            suffix: ""
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            suffix: ''
+            suffix: ""
           - os: macos-latest
             target: x86_64-apple-darwin
-            suffix: ''
+            suffix: ""
           - os: macos-latest
             target: aarch64-apple-darwin
-            suffix: ''
+            suffix: ""
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            suffix: '.exe'
+            suffix: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -98,3 +98,83 @@ jobs:
 
       - name: Publish
         run: cargo publish --token ${{ secrets.PUBLISH_CARGO_TOKEN }}
+
+  publish-homebrew:
+    name: Publish to Homebrew
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Download macOS binaries
+        run: |
+          VERSION=${{ steps.version.outputs.tag }}
+          wget https://github.com/fabianopinto/dotenvx/releases/download/${VERSION}/dotenvx-x86_64-apple-darwin.tar.gz
+          wget https://github.com/fabianopinto/dotenvx/releases/download/${VERSION}/dotenvx-aarch64-apple-darwin.tar.gz
+
+      - name: Calculate SHA256
+        id: sha256
+        run: |
+          SHA256_INTEL=$(sha256sum dotenvx-x86_64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA256_ARM=$(sha256sum dotenvx-aarch64-apple-darwin.tar.gz | awk '{print $1}')
+          echo "intel=$SHA256_INTEL" >> $GITHUB_OUTPUT
+          echo "arm=$SHA256_ARM" >> $GITHUB_OUTPUT
+
+      - name: Clone Homebrew tap
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git clone https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/fabianopinto/homebrew-tap.git tap
+
+      - name: Update Homebrew formula
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          TAG=${{ steps.version.outputs.tag }}
+          SHA256_INTEL=${{ steps.sha256.intel }}
+          SHA256_ARM=${{ steps.sha256.arm }}
+
+          cat > tap/Formula/dotenvx.rb << 'EOF'
+          class Dotenvx < Formula
+            desc "A secure environment variable management tool with built-in encryption"
+            homepage "https://github.com/fabianopinto/dotenvx"
+            version "VERSION_PLACEHOLDER"
+            license "MIT OR Apache-2.0"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/fabianopinto/dotenvx/releases/download/TAG_PLACEHOLDER/dotenvx-aarch64-apple-darwin.tar.gz"
+                sha256 "SHA256_ARM_PLACEHOLDER"
+              else
+                url "https://github.com/fabianopinto/dotenvx/releases/download/TAG_PLACEHOLDER/dotenvx-x86_64-apple-darwin.tar.gz"
+                sha256 "SHA256_INTEL_PLACEHOLDER"
+              end
+            end
+
+            def install
+              bin.install "dotenvx"
+            end
+
+            test do
+              system "#{bin}/dotenvx", "--version"
+            end
+          end
+          EOF
+
+          sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" tap/Formula/dotenvx.rb
+          sed -i "s/TAG_PLACEHOLDER/$TAG/g" tap/Formula/dotenvx.rb
+          sed -i "s/SHA256_INTEL_PLACEHOLDER/$SHA256_INTEL/g" tap/Formula/dotenvx.rb
+          sed -i "s/SHA256_ARM_PLACEHOLDER/$SHA256_ARM/g" tap/Formula/dotenvx.rb
+
+      - name: Commit and push
+        run: |
+          cd tap
+          git add Formula/dotenvx.rb
+          git commit -m "Update dotenvx to ${{ steps.version.outputs.version }}"
+          git push origin main
