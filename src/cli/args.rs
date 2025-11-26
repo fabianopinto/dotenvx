@@ -124,4 +124,19 @@ pub enum Commands {
         #[arg(last = true, required = true)]
         command: Vec<String>,
     },
+
+    /// Print environment variables in shell-compatible format
+    Printenv {
+        /// Path(s) to .env file(s)
+        #[arg(short = 'f', long = "env-file")]
+        env_files: Vec<PathBuf>,
+
+        /// Path to .env.keys file
+        #[arg(short = 'k', long = "env-keys-file")]
+        keys_file: Option<PathBuf>,
+
+        /// Output format (bash, fish, powershell, json)
+        #[arg(long, default_value = "bash")]
+        format: String,
+    },
 }
