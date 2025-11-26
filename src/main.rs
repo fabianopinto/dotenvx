@@ -70,24 +70,6 @@ async fn main() {
                 });
             std::process::exit(exit_code);
         }
-
-        Commands::Printenv {
-            env_files,
-            keys_file,
-            format,
-        } => {
-            let files: Vec<_> = if env_files.is_empty() {
-                vec![std::path::Path::new(".env")]
-            } else {
-                env_files.iter().map(|p| p.as_path()).collect()
-            };
-
-            // Filter to only existing files
-            let existing_files: Vec<&std::path::Path> =
-                files.into_iter().filter(|f| f.exists()).collect();
-
-            printenv_command(&existing_files, keys_file.as_deref(), &format)
-        }
     };
 
     if let Err(e) = result {
