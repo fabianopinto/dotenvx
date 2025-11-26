@@ -21,6 +21,13 @@ A secure environment variable management tool with built-in encryption, written 
 
 ## Installation
 
+### Homebrew (macOS)
+
+```bash
+brew tap fabianopinto/tap
+brew install dotenvx
+```
+
 ### From crates.io
 
 ```bash
