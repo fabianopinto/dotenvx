@@ -180,41 +180,6 @@ dotenvx run -f .env -f .env.local -- python app.py
 dotenvx run --overload -- ./my-app
 ```
 
-#### `printenv` - Print environment variables for shell evaluation
-
-```bash
-# Print all variables in bash format (default)
-dotenvx printenv
-
-# Print from specific file
-dotenvx printenv -f .env.production
-
-# Print from multiple files (last wins)
-dotenvx printenv -f .env -f .env.local
-
-# Use with eval to set environment variables
-eval "$(dotenvx printenv)"
-
-# Output in different formats
-dotenvx printenv --format bash
-dotenvx printenv --format fish
-dotenvx printenv --format powershell
-dotenvx printenv --format json
-```
-
-The `printenv` command is quiet by default, making it suitable for shell evaluation:
-
-```bash
-# Bash/Zsh
-eval "$(dotenvx printenv)"
-
-# Fish
-dotenvx printenv --format fish | source
-
-# PowerShell
-Invoke-Expression (dotenvx printenv --format powershell)
-```
-
 ## How It Works
 
 ### Encryption Flow
