@@ -1,11 +1,12 @@
 [package]
 name = "dotenvx"
-version = "0.2.2"
+version = "0.3.0-alpha.1"
 edition = "2021"
 authors = ["Fabiano Pinto <fabianopinto@gmail.com>"]
 description = "A secure environment variable management tool with built-in encryption"
 repository = "https://github.com/fabianopinto/dotenvx"
 license = "MIT OR Apache-2.0"
+publish = true
 keywords = ["dotenv", "environment", "encryption", "cli", "security"]
 categories = ["command-line-utilities", "cryptography", "config"]
 readme = "README.md"
